@@ -3,7 +3,7 @@ _target_: strhub.models.vitstr.system.ViTSTR
 
 # Data
 img_size: [ 224, 224 ]  # [ height, width ]
-patch_size: [ 16, 16 ]  # [ height, width ]
+patch_size: [ 30, 30 ]  # [ height, width ]
 
 # Architecture
 embed_dim: 384

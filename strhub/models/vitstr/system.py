@@ -25,7 +25,9 @@ from strhub.models.utils import init_weights
 
 from .model import ViTSTR as Model
 
-
+# Check if CUDA is available and set the device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 class ViTSTR(CrossEntropySystem):
 
     def __init__(
@@ -46,7 +48,7 @@ class ViTSTR(CrossEntropySystem):
         super().__init__(charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay)
         self.save_hyperparameters()
         self.max_label_length = max_label_length
-        # We don't predict <bos> nor <pad>
+
         self.model = Model(
             img_size=img_size,
             patch_size=patch_size,
@@ -56,7 +58,8 @@ class ViTSTR(CrossEntropySystem):
             embed_dim=embed_dim,
             num_heads=num_heads,
             num_classes=len(self.tokenizer) - 2,
-        )
+        ).to(device)  # Move model to CUDA
+        
         # Non-zero weight init for the head
         self.model.head.apply(init_weights)
 
@@ -66,14 +69,13 @@ class ViTSTR(CrossEntropySystem):
 
     def forward(self, images: Tensor, max_length: Optional[int] = None) -> Tensor:
         max_length = self.max_label_length if max_length is None else min(max_length, self.max_label_length)
-        logits = self.model.forward(images, max_length + 2)  # +2 tokens for [GO] and [s]
-        # Truncate to conform to other models. [GO] in ViTSTR is actually used as the padding (therefore, ignored).
-        # First position corresponds to the class token, which is unused and ignored in the original work.
+        logits = self.model.forward(images.to(device), max_length + 2)  # Move images to CUDA
         logits = logits[:, 1:]
         return logits
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
+        images, labels = images.to(device), labels.to(device)  # Move batch to CUDA
         loss = self.forward_logits_loss(images, labels)[1]
         self.log('loss', loss)
         return loss

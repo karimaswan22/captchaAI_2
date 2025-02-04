@@ -24,6 +24,18 @@ from strhub.models.utils import init_weights
 
 from .model import CRNN as Model
 
+import torch
+from typing import Optional, Sequence
+
+from torch import Tensor
+from pytorch_lightning.utilities.types import STEP_OUTPUT
+
+from strhub.models.base import CTCSystem
+from strhub.models.utils import init_weights
+from .model import CRNN as Model
+
+# Check if CUDA is available and set the device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class CRNN(CTCSystem):
 
@@ -43,14 +55,15 @@ class CRNN(CTCSystem):
     ) -> None:
         super().__init__(charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay)
         self.save_hyperparameters()
-        self.model = Model(img_size[0], 3, len(self.tokenizer), hidden_size, leaky_relu)
+        self.model = Model(img_size[0], 3, len(self.tokenizer), hidden_size, leaky_relu).to(device)
         self.model.apply(init_weights)
 
     def forward(self, images: Tensor, max_length: Optional[int] = None) -> Tensor:
-        return self.model.forward(images)
+        return self.model.forward(images.to(device))
 
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
+        images, labels = images.to(device), labels.to(device)
         loss = self.forward_logits_loss(images, labels)[1]
         self.log('loss', loss)
         return loss

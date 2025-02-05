@@ -67,7 +67,7 @@ def fetchme():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    parseq = torch.hub.load('baudm/parseq', 'crnn', pretrained=True, device=device).eval()
+    parseq = torch.hub.load('baudm/parseq', 'crnn', pretrained=True, device=device,skip_validation=True).eval()
     img_transform = SceneTextDataModule.get_transform(parseq.hparams.img_size)
 
     app.run(host='0.0.0.0', port=10000)

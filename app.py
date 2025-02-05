@@ -13,8 +13,6 @@ CORS(app)  # Enable CORS for all routes
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Load the model and transformation
-parseq = torch.hub.load('baudm/parseq', 'crnn', pretrained=True, device=device).eval()
-img_transform = SceneTextDataModule.get_transform(parseq.hparams.img_size)
 
 def decode_and_process_image(base64_string):
     """Decode a Base64 image and process it using the model."""
@@ -69,4 +67,7 @@ def fetchme():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    parseq = torch.hub.load('baudm/parseq', 'crnn', pretrained=True, device=device).eval()
+    img_transform = SceneTextDataModule.get_transform(parseq.hparams.img_size)
+
     app.run(host='0.0.0.0', port=10000)
